@@ -28,14 +28,14 @@ toggleButton.addEventListener("click", function () {
       videoIsPlaying = true;
       console.log ( "noSleep is enabled")
     }, 0)
-    toggleButton.value = "Enable noSleep";
-    document.body.style.backgroundColor = "white";
+    toggleButton.value = "Disable noSleep";
+    document.body.style.backgroundColor = "lightblue";
   } else {
     noSleep.disable();
     videoIsPlaying = false;
     console.log ( "noSleep is disabled")
-    toggleButton.value = "Disable noSleep";
-    document.body.style.backgroundColor = "lightblue";
+    toggleButton.value = "Enable noSleep";
+    document.body.style.backgroundColor = "white";
   }
 })
 
