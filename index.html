@@ -9,7 +9,7 @@
 
 <body>
 
-  <div>Press button to Toggle Keep Screen On</div>
+  <div>Press button to Toggle noSleep</div>
   <input type="button" id="toggleScreenOn" value="Enable noSleep">
 
 
@@ -18,11 +18,13 @@
 <!-- Javascript Files -->
 <script>
 
+var noSleep = null;
+
 var videoIsPlaying = false;
 var toggleButton = document.querySelector("#toggleScreenOn");
 toggleButton.addEventListener("click", function () {
   if ( !videoIsPlaying ) {
-    var noSleep = new NoSleep();
+    noSleep = new NoSleep();
     setTimeout ( function () {
       noSleep.enable();
       videoIsPlaying = true;
