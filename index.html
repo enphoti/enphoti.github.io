@@ -10,10 +10,7 @@
 <body>
 
   <div>Press button to Toggle Keep Screen On</div>
-  <input type="button" id="toggleKeepScreenOn" value="Turn Keep Screen ON">
-  <video width="1" height="1" loop id="screenOnVideo">
-    <source src="blank_video16x9.mp4" type="video/mp4">
-  </video>
+  <input type="button" id="toggleScreenOn" value="Enable noSleep">
 
 
 </body>
@@ -22,44 +19,25 @@
 <script>
 
 var videoIsPlaying = false;
-var toggleButton = document.querySelector("#toggleKeepScreenOn");
+var toggleButton = document.querySelector("#toggleScreenOn");
 toggleButton.addEventListener("click", function () {
-  console.log ( videoIsPlaying)
-  if ( videoIsPlaying ) {
-    stopVideo();
-    videoIsPlaying = false;
-    toggleButton.value = "Turn Keep Screen ON";
+  if ( !videoIsPlaying ) {
+    var noSleep = new NoSleep();
+    setTimeout ( function () {
+      noSleep.enable();
+      videoIsPlaying = true;
+      console.log ( "noSleep is enabled")
+    }, 0)
+    toggleButton.value = "Enable noSleep";
     document.body.style.backgroundColor = "white";
   } else {
-    startVideo();
-    videoIsPlaying = true;
-    toggleButton.value = "Turn Keep Screen OFF";
+    noSleep.disable();
+    videoIsPlaying = false;
+    console.log ( "noSleep is disabled")
+    toggleButton.value = "Disable noSleep";
     document.body.style.backgroundColor = "lightblue";
   }
 })
 
-
-var screenOnVideo = document.querySelector("#screenOnVideo");
-
-function startVideo () {
-  screenOnVideo.play();
-}
-
-function stopVideo () {
-  screenOnVideo.pause();
-}
-
-screenOnVideo.addEventListener("play", function () {
-  console.log ("Video is playing");
-})
-
-screenOnVideo.addEventListener("ended", function () {
-  console.log ("Video is ended");
-})
-
-screenOnVideo.addEventListener("pause", function () {
-  console.log ("Video is paused");
-})
-
-
 </script>
+<script src = "/noSleep.js"></script>
