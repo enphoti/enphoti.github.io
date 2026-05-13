@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lunar Calendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #050810;
+  --surface:  #0c1122;
+  --panel:    #0f1630;
+  --rim:      #1c2a45;
+  --rim2:     #253553;
+  --gold:     #c8993f;
+  --gold-lt:  #e0ba6a;
+  --moon:     #f0e4c0;
+  --moon-dim: #a89870;
+  --text:     #c8d4e8;
+  --text-dim: #5a6888;
+  --today-glow: rgba(200,153,63,0.18);
+  --new-moon-glow: rgba(80,110,200,0.12);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── Star field ───────────────────────────────────── */
+#starfield {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── Layout ───────────────────────────────────────── */
+.wrap {
+  position: relative; z-index: 1;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 20px 80px;
+}
+
+/* ─── Header ───────────────────────────────────────── */
+.hdr {
+  text-align: center;
+  margin-bottom: 52px;
+}
+
+.hdr-title {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(22px, 4.5vw, 46px);
+  font-weight: 900;
+  color: var(--moon);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.hdr-subtitle {
+  margin-top: 10px;
+  font-size: clamp(13px, 1.8vw, 16px);
+  color: var(--text-dim);
+  font-style: italic;
+  letter-spacing: .06em;
+}
+
+.hdr-today {
+  margin-top: 16px;
+  font-size: clamp(12px, 1.6vw, 15px);
+  color: var(--gold);
+  letter-spacing: .04em;
+}
+
+/* ─── Month nav ────────────────────────────────────── */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  padding: 22px 24px;
+  margin-bottom: 6px;
+}
+
+.nav-btn {
+  background: transparent;
+  border: 1px solid var(--rim);
+  color: var(--moon-dim);
+  width: 44px; height: 44px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  transition: border-color .2s, color .2s;
+  flex-shrink: 0;
+}
+.nav-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+.nav-info { text-align: center; flex: 1; }
+
+.nav-month {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(16px, 2.8vw, 28px);
+  font-weight: 600;
+  color: var(--gold-lt);
+  letter-spacing: .1em;
+}
+
+.nav-year {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(10px, 1.3vw, 13px);
+  color: var(--text-dim);
+  letter-spacing: .12em;
+  margin-top: 4px;
+}
+
+.nav-greg {
+  font-size: clamp(10px, 1.3vw, 13px);
+  color: var(--text-dim);
+  font-style: italic;
+  margin-top: 5px;
+}
+
+/* ─── Weekday headers ──────────────────────────────── */
+.cal-head {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  margin-bottom: 3px;
+}
+
+.cal-head-cell {
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: .12em;
+  color: var(--text-dim);
+  padding: 6px 2px;
+  text-transform: uppercase;
+}
+
+/* ─── Calendar grid ────────────────────────────────── */
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.day {
+  background: var(--surface);
+  border: 1px solid var(--rim);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px 6px;
+  min-height: 80px;
+  cursor: default;
+  transition: border-color .18s, background .18s;
+  position: relative;
+}
+.day:hover { border-color: var(--rim2); background: #111828; }
+
+.day.empty {
+  background: transparent;
+  border-color: transparent;
+  pointer-events: none;
+}
+
+.day.today {
+  background: var(--today-glow);
+  border-color: var(--gold);
+  box-shadow: 0 0 14px rgba(200,153,63,.12), inset 0 0 28px rgba(200,153,63,.04);
+}
+
+.day.new-moon-day {
+  border-color: var(--rim2);
+}
+
+.day-num {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(10px, 1.6vw, 15px);
+  color: var(--text);
+  font-weight: 400;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+.today .day-num { color: var(--gold-lt); font-weight: 600; }
+
+.moon-svg-wrap {
+  width: clamp(20px, 3.2vw, 28px);
+  height: clamp(20px, 3.2vw, 28px);
+  flex-shrink: 0;
+}
+.moon-svg-wrap svg { width: 100%; height: 100%; }
+
+.day-greg {
+  font-size: clamp(7px, 1vw, 9px);
+  color: var(--text-dim);
+  margin-top: 5px;
+  font-style: italic;
+  text-align: center;
+}
+.today .day-greg { color: var(--moon-dim); }
+
+.new-moon-badge {
+  position: absolute;
+  bottom: 3px; right: 4px;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #3a6aaa;
+  opacity: .7;
+}
+
+/* ─── Footer controls ──────────────────────────────── */
+.footer {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  background: transparent;
+  border: 1px solid var(--rim);
+  color: var(--moon-dim);
+  padding: 9px 22px;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  transition: border-color .2s, color .2s;
+}
+.btn:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ─── Phase legend ─────────────────────────────────── */
+.legend {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 28px;
+  padding: 16px 20px;
+  background: var(--panel);
+  border: 1px solid var(--rim);
+}
+
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.leg-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+/* ─── Explainer ────────────────────────────────────── */
+.explainer {
+  margin-top: 32px;
+  padding: 20px 24px;
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.75;
+}
+.explainer h3 {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+
+/* ─── Responsive tweaks ────────────────────────────── */
+@media (max-width: 480px) {
+  .day { min-height: 60px; }
+  .nav { padding: 16px 12px; }
+}
+</style>
+</head>
+<body>
+<canvas id="starfield"></canvas>
+
+<div class="wrap">
+  <header class="hdr">
+    <h1 class="hdr-title">The Lunar Calendar</h1>
+    <p class="hdr-subtitle">A reckoning of months by the light of the crescent moon</p>
+    <p class="hdr-today" id="todayInfo"></p>
+  </header>
+
+  <nav class="nav" aria-label="Month navigation">
+    <button class="nav-btn" id="prevBtn" aria-label="Previous month">&#8592;</button>
+    <div class="nav-info">
+      <div class="nav-month" id="navMonth">—</div>
+      <div class="nav-year"  id="navYear">—</div>
+      <div class="nav-greg"  id="navGreg">—</div>
+    </div>
+    <button class="nav-btn" id="nextBtn" aria-label="Next month">&#8594;</button>
+  </nav>
+
+  <div class="cal-head" id="calHead" role="row"></div>
+  <div class="cal-grid" id="calGrid" role="grid" aria-label="Lunar calendar"></div>
+
+  <div class="footer">
+    <button class="btn" id="todayBtn">&#9651; Return to Today</button>
+  </div>
+
+  <div class="legend" id="legend" aria-label="Moon phase legend"></div>
+
+  <div class="explainer">
+    <h3>About this calendar</h3>
+    Each month begins on the evening the first crescent of the new moon becomes visible in the sky&mdash;approximately one and a half days after astronomical new moon. Months are 29 or 30 days long, following the natural synodic cycle of 29.53 days. A new year begins with the month whose new moon falls in December, so that January always falls within a named year. The small blue dot marks the approximate day of new moon within each month. Astronomical calculations follow the algorithms of Jean Meeus.
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   MEEUS NEW MOON ALGORITHM
+   "Astronomical Algorithms", Jean Meeus (Ch. 49)
+   ============================================================ */
+
+function toRad(d) { return d * Math.PI / 180; }
+
+function newMoonJDE(k) {
+  const T  = k / 1236.85;
+  const T2 = T * T, T3 = T2 * T, T4 = T3 * T;
+
+  let JDE = 2451550.09766
+    + 29.530588861 * k
+    + 0.00015437   * T2
+    - 0.000000150  * T3
+    + 0.00000000073 * T4;
+
+  const E  = 1 - 0.002516 * T - 0.0000074 * T2;
+  const M  = toRad(2.5534     + 29.10535670  * k - 0.0000014 * T2 - 0.00000011 * T3);
+  const Mp = toRad(201.5643   + 385.81693528 * k + 0.0107582 * T2 + 0.00001238 * T3);
+  const F  = toRad(160.7108   + 390.67050284 * k - 0.0016118 * T2 - 0.00000227 * T3);
+  const Om = toRad(124.7746   - 1.56375588   * k + 0.0020672 * T2 + 0.00000215 * T3);
+
+  JDE +=
+    -0.40720  * Math.sin(Mp)
+    + 0.17241 * E   * Math.sin(M)
+    + 0.01608 * Math.sin(2*Mp)
+    + 0.01039 * Math.sin(2*F)
+    + 0.00739 * E   * Math.sin(Mp - M)
+    - 0.00514 * E   * Math.sin(Mp + M)
+    + 0.00208 * E*E * Math.sin(2*M)
+    - 0.00111 * Math.sin(Mp - 2*F)
+    - 0.00057 * Math.sin(Mp + 2*F)
+    + 0.00056 * E   * Math.sin(2*Mp + M)
+    - 0.00042 * Math.sin(3*Mp)
+    + 0.00042 * E   * Math.sin(M + 2*F)
+    + 0.00038 * E   * Math.sin(M - 2*F)
+    - 0.00024 * E   * Math.sin(2*Mp - M)
+    - 0.00017 * Math.sin(Om)
+    - 0.00007 * Math.sin(Mp + 2*M)
+    + 0.00004 * Math.sin(2*Mp - 2*F)
+    + 0.00004 * Math.sin(3*M)
+    + 0.00003 * Math.sin(Mp + M - 2*F)
+    + 0.00003 * Math.sin(2*Mp + 2*F)
+    - 0.00003 * Math.sin(Mp + M + 2*F)
+    + 0.00003 * Math.sin(Mp - M + 2*F)
+    - 0.00002 * Math.sin(Mp - M - 2*F)
+    - 0.00002 * Math.sin(3*Mp + M)
+    + 0.00002 * Math.sin(4*Mp);
+
+  return JDE;
+}
+
+/* Julian Day <-> JS Date conversion
+   JDE 2440587.5 = 1970-01-01 00:00 UTC */
+function jdeToDate(jde) {
+  return new Date((jde - 2440587.5) * 86400000);
+}
+function dateToJDE(d) {
+  return d.getTime() / 86400000 + 2440587.5;
+}
+
+/* ============================================================
+   BUILD LUNAR CALENDAR
+   ============================================================ */
+
+const CRESCENT_OFFSET = 1.5;          // days after new moon
+const EPOCH_GREG_YEAR  = 2024;        // Year 1 starts with Dec 2024 new moon
+const SYNODIC          = 29.530588861;
+
+function buildNewMoons(startYear, endYear) {
+  const list = [];
+  const kFrom = Math.floor((startYear - 2000) * 12) - 2;
+  const kTo   = Math.ceil ((endYear   - 2000) * 12) + 2;
+  for (let k = kFrom; k <= kTo; k++) {
+    const jde  = newMoonJDE(k);
+    const date = jdeToDate(jde);
+    list.push({ jde, date });
+  }
+  return list;
+}
+
+function buildLunarMonths(newMoons) {
+  const months = [];
+  for (let i = 0; i < newMoons.length - 1; i++) {
+    const nm       = newMoons[i];
+    const nmNext   = newMoons[i + 1];
+    const cresJDE  = nm.jde + CRESCENT_OFFSET;
+    const nxtCJDE  = nmNext.jde + CRESCENT_OFFSET;
+    const dayCount = Math.round(nxtCJDE - cresJDE); // 29 or 30
+
+    /* Day index within the month where the NEXT new moon falls
+       (i.e. the "dark moon" moment inside this month) */
+    const newMoonDayIdx = Math.floor(nmNext.jde - cresJDE); // 0-based
+
+    const days = [];
+    for (let d = 0; d < dayCount; d++) {
+      const dayJDE     = cresJDE + d;
+      const date       = jdeToDate(dayJDE);
+      const dSinceNew  = dayJDE - nm.jde;
+      const phaseAngle = (dSinceNew / SYNODIC) * 2 * Math.PI;
+      days.push({ dayJDE, date, phaseAngle });
+    }
+
+    months.push({
+      crescentJDE:    cresJDE,
+      nextCrescentJDE: nxtCJDE,
+      newMoonJDE:     nm.jde,
+      nextNewMoonJDE: nmNext.jde,
+      dayCount,
+      newMoonDayIdx,
+      days
+    });
+  }
+  return months;
+}
+
+function assignYears(months) {
+  let year = 0, miy = 0;
+  for (const m of months) {
+    /* Year boundary: the new moon that kicks off this month is in December */
+    const d = jdeToDate(m.newMoonJDE);
+    if (d.getUTCMonth() === 11) { year++; miy = 1; } // 11 is Novemeber
+    else miy++;
+    m.lunarYear  = year;
+    m.lunarMonth = miy;
+  }
+}
+
+/* Build enough months to cover 2024-2040 */
+const rawNewMoons  = buildNewMoons(2023, 2041);
+const MONTHS       = buildLunarMonths(rawNewMoons);
+assignYears(MONTHS);
+
+/* ============================================================
+   FIND TODAY
+   ============================================================ */
+function findTodayMonthIdx() {
+  const nowJDE = dateToJDE(new Date());
+  for (let i = 0; i < MONTHS.length; i++) {
+    const m = MONTHS[i];
+    if (nowJDE >= m.crescentJDE && nowJDE < m.nextCrescentJDE) return i;
+  }
+  return MONTHS.length - 1;
+}
+function findTodayDayIdx(monthIdx) {
+  const nowJDE = dateToJDE(new Date());
+  const m = MONTHS[monthIdx];
+  if (!m) return -1;
+  for (let d = 0; d < m.days.length; d++) {
+    if (nowJDE >= m.days[d].dayJDE && nowJDE < m.days[d].dayJDE + 1) return d;
+  }
+  return -1;
+}
+
+/* ============================================================
+   MOON PHASE SVG
+   Renders the illuminated portion for a given phase angle.
+   phaseAngle: 0 = new moon, π = full moon, 2π = new moon
+   ============================================================ */
+function moonSVG(phaseAngle, size) {
+  size = size || 28;
+  const R  = size / 2 - 1.5;
+  const cx = size / 2, cy = size / 2;
+  const phi = ((phaseAngle % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+
+  const dark    = '#0a0f1e';
+  const lit     = '#f0e4c0';
+  const rim     = '#2a3a5a';
+
+  // New moon
+  if (phi < 0.04 || phi > 2*Math.PI - 0.04) {
+    return `<svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="${cx}" cy="${cy}" r="${R}" fill="${dark}" stroke="${rim}" stroke-width="0.6"/>
+    </svg>`;
+  }
+
+  // Full moon
+  if (Math.abs(phi - Math.PI) < 0.04) {
+    return `<svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="${cx}" cy="${cy}" r="${R}" fill="${lit}" stroke="${rim}" stroke-width="0.4"/>
+      <circle cx="${cx}" cy="${cy}" r="${R}" fill="${lit}" opacity="0.3"/>
+    </svg>`;
+  }
+
+  const isWaxing = phi < Math.PI;
+
+  /* Terminator ellipse x-radius.
+     For thin crescents, cap it to ensure minimum 1.5px visible width. */
+  let tRx = Math.abs(R * Math.cos(phi));
+  const isCrescent = (isWaxing && phi < Math.PI/2) || (!isWaxing && phi > 3*Math.PI/2);
+  if (isCrescent) tRx = Math.min(tRx, R - 1.5);
+
+  const sweepOuter = isWaxing ? 1 : 0;
+  let   sweepTerm;
+  if (isWaxing)  sweepTerm = phi < Math.PI/2       ? 0 : 1;
+  else           sweepTerm = phi < 3*Math.PI/2     ? 0 : 1;
+
+  const tx = cx, ty1 = cy - R, ty2 = cy + R;
+  const path = `M ${tx} ${ty1} A ${R} ${R} 0 1 ${sweepOuter} ${tx} ${ty2} A ${tRx} ${R} 0 0 ${sweepTerm} ${tx} ${ty1} Z`;
+
+  return `<svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="${cx}" cy="${cy}" r="${R}" fill="${dark}" stroke="${rim}" stroke-width="0.6"/>
+    <path d="${path}" fill="${lit}" opacity="0.93"/>
+  </svg>`;
+}
+
+/* ============================================================
+   FORMATTING HELPERS
+   ============================================================ */
+const NUMERALS   = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII'];
+const GREG_MON_S = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const GREG_MON_L = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+const DOW        = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function fmtShort(d) {
+  return `${GREG_MON_S[d.getUTCMonth()]} ${d.getUTCDate()}`;
+}
+function fmtLong(d) {
+  return `${d.getUTCDate()} ${GREG_MON_L[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+function lunarLabel(m) {
+  const num = m.lunarMonth - 1;
+  return `Month ${NUMERALS[num] || m.lunarMonth}`;
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+let currentIdx = findTodayMonthIdx();
+
+function render() {
+  const m = MONTHS[currentIdx];
+  if (!m) return;
+
+  /* Nav header */
+  document.getElementById('navMonth').textContent = lunarLabel(m);
+  document.getElementById('navYear' ).textContent = `Year ${m.lunarYear}`;
+  const firstDate = jdeToDate(m.crescentJDE);
+  const lastDate  = jdeToDate(m.nextCrescentJDE - 0.5);
+  document.getElementById('navGreg').textContent =
+    `${fmtLong(firstDate)} — ${fmtLong(lastDate)}`;
+
+  /* Today info strip */
+  const todayMIdx = findTodayMonthIdx();
+  const todayDIdx = findTodayDayIdx(todayMIdx);
+  const tm = MONTHS[todayMIdx];
+  if (tm && todayDIdx >= 0) {
+    document.getElementById('todayInfo').textContent =
+      `Today is Day ${todayDIdx + 1} of ${lunarLabel(tm)}, Year ${tm.lunarYear}`;
+  }
+
+  /* Weekday header */
+  const headEl = document.getElementById('calHead');
+  headEl.innerHTML = '';
+  DOW.forEach(d => {
+    const cell = document.createElement('div');
+    cell.className = 'cal-head-cell';
+    cell.textContent = d;
+    headEl.appendChild(cell);
+  });
+
+  /* Grid */
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  const todayUTC = (() => {
+    const n = new Date();
+    return `${n.getUTCFullYear()}-${n.getUTCMonth()}-${n.getUTCDate()}`;
+  })();
+
+  /* Day-of-week offset for the first lunar day */
+  const firstDOW = firstDate.getUTCDay();
+  for (let s = 0; s < firstDOW; s++) {
+    const e = document.createElement('div');
+    e.className = 'day empty'; e.setAttribute('aria-hidden','true');
+    grid.appendChild(e);
+  }
+
+  m.days.forEach((day, idx) => {
+    const cell = document.createElement('div');
+    const dayNum = idx + 1;
+
+    const dStr = (() => {
+      const dd = day.date;
+      return `${dd.getUTCFullYear()}-${dd.getUTCMonth()}-${dd.getUTCDate()}`;
+    })();
+    const isToday = (dStr === todayUTC);
+    const isNewMoon = (idx === m.newMoonDayIdx);
+
+    let cls = 'day';
+    if (isToday)   cls += ' today';
+    if (isNewMoon) cls += ' new-moon-day';
+    cell.className = cls;
+    cell.setAttribute('role','gridcell');
+    cell.setAttribute('aria-label', `Day ${dayNum}`);
+
+    const svgStr   = moonSVG(day.phaseAngle);
+    const gregDate = fmtShort(day.date);
+
+    cell.innerHTML = `
+      <span class="day-num">${dayNum}</span>
+      <span class="moon-svg-wrap">${svgStr}</span>
+      <span class="day-greg">${gregDate}</span>
+      ${isNewMoon ? '<span class="new-moon-badge" title="New moon"></span>' : ''}
+    `;
+    grid.appendChild(cell);
+  });
+
+  /* Update nav button state */
+  document.getElementById('prevBtn').style.opacity = currentIdx > 0 ? '1' : '.3';
+  document.getElementById('nextBtn').style.opacity = currentIdx < MONTHS.length-1 ? '1' : '.3';
+}
+
+/* ============================================================
+   PHASE LEGEND
+   ============================================================ */
+function buildLegend() {
+  const phases = [
+    { angle: 0.3,              label: 'New crescent (day 1)' },
+    { angle: Math.PI * 0.5,    label: 'First quarter' },
+    { angle: Math.PI,          label: 'Full moon' },
+    { angle: Math.PI * 1.5,    label: 'Last quarter' },
+    { angle: Math.PI * 1.85,   label: 'Waning crescent' },
+  ];
+  const leg = document.getElementById('legend');
+  leg.innerHTML = '';
+  phases.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'leg-item';
+    item.innerHTML = moonSVG(p.angle, 22) + `<span>${p.label}</span>`;
+    leg.appendChild(item);
+  });
+}
+
+/* ============================================================
+   STAR FIELD
+   ============================================================ */
+function initStars() {
+  const canvas = document.getElementById('starfield');
+  const ctx = canvas.getContext('2d');
+
+  let stars = [];
+
+  function buildStars(w, h) {
+    stars = [];
+    const count = Math.min(800, Math.floor(w * h / 3000));
+    for (let i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: Math.random() * 1.1,
+        a: Math.random() * 0.65 + 0.1,
+        phase: Math.random() * Math.PI * 2,
+        speed: Math.random() * 0.002 + 0.001
+      });
+    }
+  }
+
+  let raf;
+  function draw(t) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    stars.forEach(s => {
+      const a = s.a * (0.6 + 0.4 * Math.sin(t * s.speed + s.phase));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(210,225,255,${a})`;
+      ctx.fill();
+    });
+    raf = requestAnimationFrame(draw);
+  }
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    buildStars(canvas.width, canvas.height);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  raf = requestAnimationFrame(draw);
+}
+
+/* ============================================================
+   EVENT LISTENERS
+   ============================================================ */
+document.getElementById('prevBtn').addEventListener('click', () => {
+  if (currentIdx > 0) { currentIdx--; render(); }
+});
+document.getElementById('nextBtn').addEventListener('click', () => {
+  if (currentIdx < MONTHS.length - 1) { currentIdx++; render(); }
+});
+document.getElementById('todayBtn').addEventListener('click', () => {
+  currentIdx = findTodayMonthIdx(); render();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft'  && currentIdx > 0)               { currentIdx--; render(); }
+  if (e.key === 'ArrowRight' && currentIdx < MONTHS.length-1) { currentIdx++; render(); }
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+initStars();
+buildLegend();
+render();
+</script>
+</body>
+</html>
